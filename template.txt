@@ -1,0 +1,420 @@
+/00
+000000              LECROY_1_0:  TEMPLATE
+                    5 56 138
+; NOTE - Any additions to this file must also update the numbers above
+;        This NOTE The numbers represent 
+;             Number of blocks   Number of variables  Number of Enums
+;
+;
+; Description of the structure of waveforms produced by 
+; LeCroy Digital Oscilloscopes.
+;
+; A waveform consists of several logical data blocks whose formats are
+; explained below.
+; A complete waveform consists of the following blocks:
+;       the descriptor block WAVEDESC
+;       the text descriptor block USERTEXT (optional)
+;       the time array block (for sequence waveforms only)
+;       data array block
+;       auxiliary or second data array block (for dual waveforms only)
+;
+; In the following explanation, every element of a block is described by a 
+; single line in the form
+;
+; <byte position>   <variable name>: <variable type> ; <comment>
+;
+;  where
+;
+;   <byte position> = position in bytes (decimal offset) of the variable, 
+;                     relative to the beginning of the block.
+;
+;   <variable name> = name of the variable. 
+;
+;   <variable type> = string        up to 16-character name 
+;                                     terminated with a null byte
+;                       byte         8-bit signed data value
+;                       word        16-bit signed data value
+;                       long        32-bit signed data value
+;                      float        32-bit IEEE floating point value
+;                     double        64-bit IEEE floating point value
+;                       enum        enumerated value in the range 0 to N
+;                                   represented as a 16-bit data value.
+;                                   The list of values follows immediately.
+;                 time_stamp        consists of the following fields:
+;                                   double  seconds     (0.00 to 59.999999)
+;                                   byte    minutes     (0 to 59)
+;                                   byte    hours       (0 to 23)
+;                                   byte    days        (1 to 31)
+;                                   byte    months      (1 to 12)
+;                                   word    year        (0 to 16000)
+;                                   word    unused
+;                                   (There are 16 bytes in a time field.)
+;                       data        byte or word, as specified by the COMM_TYPE
+;                                   variable in the WAVEDESC block
+;                       text        arbitrary length text string (maximum 400)
+;            unit_definition        48 character null-terminated ASCII string
+;                                   for the unit name. 
+;
+;==========================================================================
+;
+WAVEDESC: BLOCK 
+;
+; Explanation of the wave descriptor block  WAVEDESC ;  
+;
+<  0>          DESCRIPTOR_NAME: string  ; the first 8 chars are always WAVEDESC
+;
+< 16>          TEMPLATE_NAME: string    
+;
+< 32>          COMM_TYPE: enum          
+               _0      byte             
+               _1      word             
+               endenum                  
+;            
+< 34>          COMM_ORDER: enum         
+               _0      HIFIRST          
+               _1      LOFIRST          
+               endenum                  
+;
+;
+; The following variables specify the block lengths of all blocks of which
+; the entire waveform (as it is currently being read) is composed.
+; If a block length is zero, the block is (currently) not present.
+; 
+;
+;BLOCKS :
+;
+< 36>          WAVE_DESCRIPTOR: long    ; length in bytes of block WAVEDESC
+< 40>          USER_TEXT: long          ; length in bytes of block USERTEXT
+;
+;ARRAYS :
+;
+< 44>          TRIGTIME_ARRAY: long     ; length in bytes of TRIGTIME array
+;
+< 48>          WAVE_ARRAY_1: long       ; length in bytes of 1st data array
+;
+< 52>          WAVE_ARRAY_2: long       ; length in bytes of 2nd data array
+;
+;
+; The following variables identify the instrument
+;
+< 56>          INSTRUMENT_NAME: string  
+;
+< 72>          INSTRUMENT_NUMBER: long  
+;
+; The following variables describe the waveform type and the time at
+; which the waveform was generated.
+;
+< 76>          TRACE_LABEL: string      ; trace label
+;
+< 92>          WAVE_ARRAY_COUNT: long   ; actual number of points in each
+                                        ; data array
+;
+< 96>          PNTS_PER_SCREEN: long    ; nominal number of points in each
+                                        ; data array
+;
+<100>          FIRST_VALID_PNT: long    ; count of number of points to skip 
+                                        ; before first good point in data array
+                                        ; FIRST_VALID_POINT = 0 
+                                        ; for normal waveforms.
+;
+<104>          LAST_VALID_PNT: long     ; index of last good data point 
+                                        ; in data array
+;
+<108>          SUBARRAY_COUNT: long     ; for sequence waveforms, actual number
+                                        ; of segments in data array
+;
+<112>          NOM_SUBARRAY_CNT: long   ; nominal number of segments in data
+                                        ; array.
+                                        ; NOM_SUBARRAY_CNT = 1 for non-sequence
+                                        ; waveforms
+;
+<116>          SWEEPS_PER_ACQ: long     ; for cumulative waveforms(eg.average),
+                                        ; number of sweeps which contributed to
+                                        ; the waveform
+;
+<120>          VERTICAL_GAIN: float     
+;
+<124>          VERTICAL_OFFSET: float   ; to get floating values from raw data
+                                        ; VERTICAL_GAIN*data - VERTICAL_OFFSET
+;
+<128>          MAX_VALUE: word          ; maximum allowed data value
+;
+<130>          MIN_VALUE: word          ; minimum allowed data value
+;
+<132>          NOMINAL_BITS: word       ; a measure of the intrinsic precision 
+                                        ; of the observation: ADC data is 8 bit
+                                        ; averaged data is 10-12 bit, etc. 
+;
+<134>          HORIZ_INTERVAL: float    ; sampling interval for time domain
+                                        ; waveforms
+;
+<138>          HORIZ_OFFSET: double     ; actual trigger delay (time in seconds
+                                        ; from trigger to first data point)
+;
+<146>          PIXEL_OFFSET: double     ; nominal trigger delay selected by 
+                                        ; user
+; 
+<154>          VERTUNIT: unit_definition  ; units of the vertical axis 
+;
+<202>          HORUNIT: unit_definition   ; units of the horizontal axis  
+;
+;
+; The following variables describe the time at which
+; the waveform was generated and the waveform type 
+;
+<250>          TRIGGER_TIME: time_stamp ; time of the trigger
+;   
+<266>          ACQ_DURATION: float      ; duration of the acquisition (in sec)
+                                        ; in multi-trigger waveforms.
+                                        ; (e.g. sequence or averaging)  
+;
+<270>          RECORD_TYPE: enum        
+               _0      single_sweep     
+               _1      interleaved      
+               _2      histogram        
+               _3      trend            
+               _4      filter_coefficient
+               _5      complex
+               _6      extrema
+               _7      sequence         
+	       _8      centered_ris
+	       _9      rolling
+	       _10     alt_sync_avg
+	       _11     str_seq
+	       _12     uncorrected_str_seq
+               endenum                  
+;
+<272>          PROCESSING_DONE: enum          
+               _0       no_processing   
+               _1       fir_filter      
+               _2       interpolated
+               _3       sparsed_waveform
+               _4       autoscaled
+               _5       no_result
+               _6       roll_mode
+	       _7       preprocessed
+               _8       cumulative
+               endenum                  
+;
+;
+; The following variables describe the basic acquisition 
+; conditions used when the waveform was acquired
+;
+<274>          TIMEBASE: enum           
+               _0    1_ps/div           
+               _1    2_ps/div           
+               _2    5_ps/div           
+               _3    10_ps/div          
+               _4    20_ps/div          
+               _5    50_ps/div          
+               _6    100_ps/div         
+               _7    200_ps/div         
+               _8    500_ps/div         
+               _9    1_ns/div           
+               _10   2_ns/div           
+               _11   5_ns/div           
+               _12   10_ns/div          
+               _13   20_ns/div          
+               _14   50_ns/div          
+               _15   100_ns/div         
+               _16   200_ns/div         
+               _17   500_ns/div         
+               _18   1_us/div           
+               _19   2_us/div           
+               _20   5_us/div           
+               _21   10_us/div          
+               _22   20_us/div          
+               _23   50_us/div          
+               _24   100_us/div         
+               _25   200_us/div         
+               _26   500_us/div         
+               _27   1_ms/div           
+               _28   2_ms/div           
+               _29   5_ms/div           
+               _30   10_ms/div          
+               _31   20_ms/div          
+               _32   50_ms/div          
+               _33   100_ms/div         
+               _34   200_ms/div         
+               _35   500_ms/div           
+               _36   1_s/div            
+               _37   2_s/div            
+               _38   5_s/div            
+               _39   10_s/div           
+               _40   20_s/div           
+               _41   50_s/div           
+               _42   100_s/div          
+               _43   200_s/div          
+               _44   500_s/div          
+               _45   1_ks/div           
+               _46   2_ks/div           
+               _47   5_ks/div           
+               endenum                  
+;
+<276>          VERT_COUPLING: enum      
+               _0      DC_50_Ohms       
+               _1      ground           
+               _2      DC_1MOhm         
+               _3      ground           
+               _4      AC_1_MOhm        
+               endenum                  
+;
+<278>          PROBE_ATT: float         
+;
+<282>          FIXED_VERT_GAIN: enum    
+               _0   1_uV/div            
+               _1   2_uV/div            
+               _2   5_uV/div            
+               _3   10_uV/div           
+               _4   20_uV/div           
+               _5   50_uV/div           
+               _6   100_uV/div          
+               _7   200_uV/div          
+               _8   500_uV/div          
+               _9   1_mV/div            
+               _10  2_mV/div            
+               _11  5_mV/div            
+               _12  10_mV/div           
+               _13  20_mV/div           
+               _14  50_mV/div           
+               _15  100_mV/div          
+               _16  200_mV/div          
+               _17  500_mV/div          
+               _18  1_V/div             
+               _19  2_V/div             
+               _20  5_V/div             
+               _21  10_V/div            
+               _22  20_V/div            
+               _23  50_V/div            
+               _24  100_V/div           
+               _25  200_V/div           
+               _26  500_V/div           
+               _27  1_kV/div            
+               endenum                  
+;
+<284>          BANDWIDTH_LIMIT: enum    
+               _0      off              
+               _1      on,_80_MHz       
+               endenum                
+;
+<286>          VERTICAL_VERNIER: float  
+;
+<290>          ACQ_VERT_OFFSET: float   
+;
+<294>          WAVE_SRC_PLUGIN: enum
+               _0      UNKNOWN
+               _1      PLUGIN_A
+               _2      PLUGIN_B
+               _3      PLUGIN_C
+               _4      PLUGIN_D
+               _5      PLUGIN_E
+               _6      PLUGIN_F
+               endenum                  
+;
+<296>          WAVE_SRC_CHANNEL: enum
+               _0      UNKNOWN
+               _1      CHANNEL_1        
+               _2      CHANNEL_2        
+               _3      CHANNEL_3        
+               _4      CHANNEL_4        
+               endenum                  
+;
+<298>          TRIGGER_SOURCE: enum
+               _0      CHANNEL_1        
+               _1      CHANNEL_2        
+               _2      CHANNEL_3        
+               _3      CHANNEL_4        
+               _4      LINE
+               _5      EXT
+               _6      EXT/10
+	       _7      PULSE
+               endenum                  
+;
+<300>          TRIGGER_COUPLING: enum
+               _0      AC
+               _1      LF_REJ
+               _2      HF_REJ
+               _3      DC
+	       _4      HF_SYNC
+               endenum                  
+;
+<302>          TRIGGER_SLOPE: enum
+               _0      POSITIVE
+               _1      NEGATIVE
+               endenum                  
+;
+<304>          SMART_TRIGGER: enum
+               _0      OFF
+               _1      ON
+               endenum                  
+;
+<306>          TRIGGER_LEVEL: float   
+;
+<310>          SWEEPS_ARRAY1: long     ; for alt sync avg waveforms,
+                                       ; number of sweeps which contributed to
+                                       ; the waveform in data array 1
+;
+<314>          SWEEPS_ARRAY2: long     ; for alt sync avg waveforms,
+                                       ; number of sweeps which contributed to
+                                       ; the waveform in data array 1
+;
+<318>          UNUSED: word            ; for alignment
+;
+/00              ENDBLOCK
+;
+;
+;==========================================================================
+;
+USERTEXT: BLOCK
+;
+; Explanation of the descriptor block  USERTEXT  at most 400 bytes long. 
+;
+<  0>          DESCRIPTOR_NAME: string  ; the first 8 chars are always USERTEXT
+;
+< 16>          TEXT: text               ; this is simply a list of ASCII 
+                                        ; characters
+;
+/00              ENDBLOCK
+;
+;
+;==========================================================================
+;
+TRIGTIME: ARRAY
+; 
+; Explanation of the trigger time array (present for sequence waveforms only)
+;
+<  0>          TRIGGER_TIME: double     ; time in seconds from first trigger
+                                        ; to this one 
+;
+<  8>          TRIGGER_OFFSET: double   ; actual trigger delay trigger in
+                                        ; seconds from this trigger to
+                                        ; first data point
+;
+/00              ENDARRAY
+;
+;
+;==========================================================================
+;
+WAVE_ARRAY_1: ARRAY
+; 
+;
+<  0>          MEASUREMENT: data        ; the actual format of a data is 
+                                        ; given in the WAVEDESC descriptor
+                                        ; by variable COMM_TYPE
+;
+/00              ENDARRAY
+;
+;
+;==========================================================================
+;
+WAVE_ARRAY_2: ARRAY
+; 
+;
+<  0>          MEASUREMENT: data        ; the actual format of a data is 
+                                        ; given in the WAVEDESC descriptor
+                                        ; by variable COMM_TYPE
+;
+/00              ENDARRAY
+
+
+ 
