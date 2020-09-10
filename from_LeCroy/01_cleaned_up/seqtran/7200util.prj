@@ -1,0 +1,138 @@
+========== system definitions ==========
+ccflag  bcc RELEASE -UTEST
+ccflag  bcc DEBUG   -DTEST
+ccflag  wat RELEASE -UTEST -UMSDOS
+ccflag  wat DEBUG   -DTEST -DDEBUG -UMSDOS /d2 
+========== debug rules ==========
+assemble.bcc
+  rm -f $res
+  tasm /T /MX /M5 /ZI -I$home\include -I$obj\fnt $src,$res
+
+assemble.wat
+  rm -f $res
+  tasm /T /MX /M5 /DSVS -I$home\include -I$obj\fnt $src,$res
+
+compile.bcc
+  rm -f $res
+  bcc -c $ccflag +$home\7200util.cfg -I$home\include -I$obj\mnu $src
+
+compile.wat
+  rm -f $res
+  wcc386 /3s /j /zq $ccflag -I$home\include $src 
+
+riscomp.wat
+  rm -f $res
+  wcc386 /3s /j /zq $ccflag -DRIS -I$home\include $src 
+
+link.bcc
+  rm -f $res
+  $sep=+
+  cp $fdep^obj $tmp
+  echo $res,$res >>$tmp
+  cat $fdep^lib >>$tmp
+  tlink /v/c/LD:\BORLANDC\LIB @$tmp
+  revdate -n3 -m2 -i3 $res.rev >$tmp.0
+  inject -ascii $tmp.0 $res PUTVERSIONHERE
+
+link.wat
+  rm -f $res
+  echo debug all > $tmp.cfg
+  echo option quiet >> $tmp.cfg
+  echo option stack=20k >> $tmp.cfg
+  wpaste file $fdep^o >> $tmp.cfg
+  wpaste file $fdep^obj >> $tmp.cfg
+  wpaste library $fdep^lib >>$tmp.cfg
+  wlink @$tmp.cfg name $res
+
+========== release rules ==========
+
+link.wat
+  rm -f $res
+  echo debug all > $tmp.cfg
+  echo option quiet >> $tmp.cfg
+  echo option stack=20k >> $tmp.cfg
+  wpaste file $fdep^o >> $tmp.cfg
+  wpaste file $fdep^obj >> $tmp.cfg
+  wpaste library $fdep^lib >>$tmp.cfg
+  wlink @$tmp.cfg name $res
+  4gwbind $home\bin\4gwpro.exe $res $tmp.1 -q -v
+  copy $tmp.1 $res
+
+========== source files ==========
+ris_args.c  ris          ris_args.obj     riscomp
+ris_tran.c  ris          ris_tran.obj     riscomp
+seq_mtg.c   ris          seq_mtg.obj      riscomp
+seq_prt.c   ris          seq_prt.obj      riscomp
+seq_util.c  ris          seq_util.obj     riscomp
+seq_wfd.c   ris          seq_wfd.obj      riscomp
+
+seq_args.c  c            seq_args.obj     compile
+seq_filt.c  c            seq_filt.obj     compile
+seq_mtg.c   c            seq_mtg.obj      compile
+seq_prt.c   c            seq_prt.obj      compile
+seq_tran.c  c            seq_tran.obj     compile
+seq_util.c  c            seq_util.obj     compile
+seq_wfd.c   c            seq_wfd.obj      compile
+
+pack.c      c            pack.obj         compile
+
+acquire.c   c            acquire.obj      compile
+acq_dos.c   c            acq_dos.obj      compile
+aha1540b.c  c            aha1540b.obj     compile
+ahaprint.c  c            ahaprint.obj     compile
+scsi.c      c            scsi.obj         compile
+intsubs.s   asm          intsubs.o        assemble
+intsubs.asm asm          intsubs.obj      assemble
+
+aagen.h      include
+aatom.h      include
+aha1540b.h   include
+seq_filt.h   include
+seq_hdr.h    include
+seq_tran.h   include
+svs_port.h   include
+wat_port.h   include
+c0l.obj      lib
+cl.lib       lib
+emu.lib      lib
+mcibl.obj    lib
+mathl.lib    lib
+4gwpro.exe   bin
+========== result files ==========
+pack.exe	c	     link
+test.exe	c            link
+ristran.exe     ris          link
+seqtran.exe     c            link
+acquire.exe     c            link
+========== aux files ==========
+========== dependencies ==========
+test.exe    cl.lib
+test.exe    emu.lib
+test.exe    mathl.lib
+test.exe    c0l.obj
+
+pack.exe   pack.obj
+
+ristran.exe  ris_args.obj
+ristran.exe  seq_mtg.obj
+ristran.exe  seq_prt.obj
+ristran.exe  ris_tran.obj
+ristran.exe  seq_util.obj
+ristran.exe  seq_wfd.obj
+
+seqtran.exe  seq_args.obj
+seqtran.exe  seq_filt.obj
+seqtran.exe  seq_mtg.obj
+seqtran.exe  seq_prt.obj
+seqtran.exe  seq_tran.obj
+seqtran.exe  seq_util.obj
+seqtran.exe  seq_wfd.obj
+
+acquire.exe  intsubs.o
+acquire.exe  acquire.obj
+acquire.exe  acq_dos.obj
+acquire.exe  aha1540b.obj
+acquire.exe  ahaprint.obj
+acquire.exe  scsi.obj
+========== end of file ==========
+
