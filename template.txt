@@ -415,6 +415,3 @@ WAVE_ARRAY_2: ARRAY
                                         ; by variable COMM_TYPE
 ;
 /00              ENDARRAY
-
-
- 
